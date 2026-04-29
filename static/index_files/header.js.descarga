@@ -1,0 +1,99 @@
+// ### om-ma-hed ###
+var loggerPrefix = ' om-ma-hed ';
+var agencyId = '';
+console.log(loggerPrefix);
+var logger = function (...args) {
+    return console.log(loggerPrefix + ': ', ...args);
+};
+var protocol =
+    (location.protocol == 'https:' ? location.protocol : 'http:') + '//';
+// * load script from url
+var loadScript = (url, callback) => {
+    const script = document.createElement('script');
+    script.src = url;
+    if (callback) {
+        script.onload = callback;
+    }
+    document.body.appendChild(script);
+};
+// try to read token from query string
+var queryString = window.location.search || '';
+var tokenParamName = '_mts_token';
+logger('queryString', queryString);
+if (
+    queryString &&
+    queryString.indexOf('?') > -1 &&
+    queryString.indexOf(tokenParamName + '=') > -1
+) {
+    var start = queryString.indexOf(tokenParamName) + tokenParamName.length + 1;
+    var end = queryString.indexOf('&', start);
+    var token = queryString.substring(
+        start,
+        end === -1 ? queryString.length : end
+    );
+    logger('token', token);
+    // save on local storage if its supported
+    if (localStorage) {
+        localStorage.setItem(tokenParamName, token);
+        var now = new Date();
+        localStorage.setItem(tokenParamName + '_date', now.toString());
+        var historyString = localStorage.getItem(tokenParamName + '_history');
+        logger('historyString', historyString);
+        var visitHistory = historyString ? JSON.parse(historyString) : [];
+        logger('history', visitHistory);
+        visitHistory.push({
+            date: now.toISOString(),
+            token: token,
+        });
+        localStorage.setItem(
+            tokenParamName + '_history',
+            JSON.stringify(visitHistory)
+        );
+        logger(visitHistory);
+    }
+}
+
+const urlParams = new URLSearchParams(window.location.search);
+const params = Object.fromEntries(urlParams);
+
+var omPixelSrc = protocol + 'ut.om-meta.com/usertr/pxl/1?';
+omPixelSrc += window.location.search.replace('?', '');
+if (window.location.search) {
+    omPixelSrc += '&';
+}
+omPixelSrc += 'url-path=' + encodeURIComponent(window.location.pathname);
+omPixelSrc += '&om-account=' + agencyId;
+omPixelSrc += '&domain=' + encodeURIComponent(window.location.hostname);
+
+if (localStorage) {
+    const previousParams = localStorage.getItem('_mts_query_params') || '{}';
+    const previousParamsObj = JSON.parse(previousParams);
+    const fullParams = { ...previousParamsObj, ...params };
+    omPixelSrc += '&' + new URLSearchParams(fullParams).toString();
+    localStorage.setItem(
+        '_mts_query_params',
+        JSON.stringify(fullParams)
+    );
+}
+// document.createElement('img').src = omPixelSrc;
+// * Cookie Sync
+var exchangePixels = [
+    protocol + 'ut.om-meta.com/csync?exchange=41cd7873289762a3cc93a994250371cf1cd20569',
+    protocol + 'ut.om-meta.com/csync?exchange=b3a8e6407c0042499ccd44b6d4dd64368a186ae9',
+];
+
+var loadExchangePixels = function () {
+    for (var i = 0; i < exchangePixels.length; i++) {
+        var exchangePixel = document.createElement('img');
+        exchangePixel.src = exchangePixels[i];
+    }
+};
+
+var omImgPixel = document.createElement('img');
+omImgPixel.addEventListener('load', () => loadExchangePixels());
+omImgPixel.addEventListener('error', (err) => {
+    logger('Error loading pixel', err);
+    loadExchangePixels();
+});
+
+omImgPixel.src = omPixelSrc;

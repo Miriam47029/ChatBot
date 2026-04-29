@@ -18,7 +18,7 @@ precios_destinos_usd_por_dia = {
 TARIFA_ESTANDAR_USD_POR_DIA = 100 
 TIPO_DE_CAMBIO = 17.38
 
-@app.route('/')
+@app.route('/', methods=['GET','POST'])
 def home():
     return render_template('index.html') 
 

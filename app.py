@@ -66,7 +66,7 @@ def cotizar_viaje():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
+    
 def validar_mensaje_usuario(mensaje):
     if mensaje != "":
         if "ayuda" in mensaje:
